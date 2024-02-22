@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <cstdio>
 #include <string>
+#include <wingdi.h>
 
 #define MAX_LOADSTRING 100
 
@@ -15,6 +16,9 @@ HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND hClockText;
+
+const int WIN_WIDTH = 134;
+const int WIN_HEIGHT = 74;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -52,7 +56,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
         {
-            //SetWindowText(msg.hwnd, TEXT("Control string 222"));
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
@@ -104,14 +107,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // Store instance handle in our global variable
 
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+      CW_USEDEFAULT, 0, WIN_WIDTH, WIN_HEIGHT, nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
    {
       return FALSE;
    }
-
-   hClockText = CreateWindow(TEXT("STATIC"), NULL, WS_VISIBLE | WS_CHILD | SS_LEFT, 10, 10, 100, 100, hWnd, NULL, hInstance, NULL);
+   SetMenu(hWnd, NULL);
 
    SetWindowLong(hWnd, GWL_STYLE, 0); //remove all window styles, check MSDN for details
 
@@ -155,17 +157,48 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
         {
             PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
+            HDC hDC = BeginPaint(hWnd, &ps);
             // TODO: Add any drawing code that uses hdc here...
+            HPEN hpenOld = static_cast<HPEN>(SelectObject(hDC, GetStockObject(DC_PEN)));
+            HBRUSH hbrushOld = static_cast<HBRUSH>(SelectObject(hDC, GetStockObject(NULL_BRUSH)));
 
+            // Calculate the dimensions of the 4 equal rectangles.
+            RECT rcWindow;
+            GetClientRect(hWnd, &rcWindow);
+
+            RECT rc1;
+            rc1 = rcWindow;
+
+            // Optionally, deflate each of the rectangles by an arbitrary amount so that
+            // they don't butt up right next to each other and we can distinguish them.
+            InflateRect(&rc1, -5, -5);
+            // Draw (differently-colored) borders around these rectangles.
+            SetDCPenColor(hDC, RGB(255, 0, 0));    // red
+            Rectangle(hDC, rc1.left, rc1.top, rc1.right, rc1.bottom);
+
+            // Draw the text into the center of each of the rectangles.
+            SetBkMode(hDC, TRANSPARENT);
+            SetBkColor(hDC, RGB(0, 0, 0));   // black
+            // TODO: Optionally, set a nicer font than the default.
+
+            // Clean up after ourselves.
+            SelectObject(hDC, hpenOld);
+            SelectObject(hDC, hbrushOld);
+            SetBkColor(hDC, RGB(0, 0, 0));
+            HBRUSH brush = CreateSolidBrush(RGB(50, 151, 151));
+
+            FillRect(hDC, &rc1, brush);
+
+            DeleteObject(brush);
             SYSTEMTIME lt;
             GetLocalTime(&lt);
             char cstr2[100];
-            sprintf_s(cstr2, " The local time is: %02d:%02d %s\n", lt.wHour > 12 ? lt.wHour - 12 : lt.wHour, lt.wMinute, lt.wHour >= 12 ? "PM" : "AM");
+            sprintf_s(cstr2, " %02d:%02d %s\n", lt.wHour > 12 ? lt.wHour - 12 : lt.wHour, lt.wMinute, lt.wHour >= 12 ? "PM" : "AM");
             auto s = std::string(cstr2);
             std::wstring stemp = std::wstring(s.begin(), s.end());
             LPCWSTR sw = stemp.c_str();
-            SetWindowText(hClockText, sw);
+            SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+            DrawText(hDC, sw, -1, &rc1, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
 
 
             EndPaint(hWnd, &ps);

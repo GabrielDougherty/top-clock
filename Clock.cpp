@@ -4,12 +4,17 @@
 #include "framework.h"
 #include "Clock.h"
 
+#include <windows.h>
+#include <cstdio>
+#include <string>
+
 #define MAX_LOADSTRING 100
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+HWND hClockText;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -106,8 +111,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
+   hClockText = CreateWindow(TEXT("STATIC"), NULL, WS_VISIBLE | WS_CHILD | SS_LEFT, 10, 10, 100, 100, hWnd, NULL, hInstance, NULL);
+
    SetWindowLong(hWnd, GWL_STYLE, 0); //remove all window styles, check MSDN for details
-   SetWindowText(hWnd, TEXT("Control string"));
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
@@ -151,9 +157,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: Add any drawing code that uses hdc here...
+
+            SYSTEMTIME lt;
+            GetLocalTime(&lt);
+            char cstr2[100];
+            sprintf_s(cstr2, " The local time is: %02d:%02d %s\n", lt.wHour > 12 ? lt.wHour - 12 : lt.wHour, lt.wMinute, lt.wHour >= 12 ? "PM" : "AM");
+            auto s = std::string(cstr2);
+            std::wstring stemp = std::wstring(s.begin(), s.end());
+            LPCWSTR sw = stemp.c_str();
+            SetWindowText(hClockText, sw);
+
+
             EndPaint(hWnd, &ps);
         }
         break;
+    case WM_NCHITTEST: {
+        LRESULT hit = DefWindowProc(hWnd, message, wParam, lParam);
+        if (hit == HTCLIENT) hit = HTCAPTION;
+        return hit;
+    }
     case WM_DESTROY:
         PostQuitMessage(0);
         break;

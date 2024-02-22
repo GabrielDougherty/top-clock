@@ -9,6 +9,7 @@
 #include <string>
 #include <wingdi.h>
 
+#define TIMER1 1001
 #define MAX_LOADSTRING 100
 
 // Global Variables:
@@ -114,6 +115,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
    SetMenu(hWnd, NULL);
+   SetTimer(hWnd,             // handle to main window 
+       TIMER1,            // timer identifier 
+       100,                 // 1-second interval 
+       (TIMERPROC)NULL);     // no timer callback 
 
    SetWindowLong(hWnd, GWL_STYLE, 0); //remove all window styles, check MSDN for details
 
@@ -121,6 +126,60 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    UpdateWindow(hWnd);
 
    return TRUE;
+}
+
+void DrawClock(HWND hWnd)
+{
+    PAINTSTRUCT ps;
+    HDC hDC = BeginPaint(hWnd, &ps);
+    // TODO: Add any drawing code that uses hdc here...
+    HPEN hpenOld = static_cast<HPEN>(SelectObject(hDC, GetStockObject(DC_PEN)));
+    HBRUSH hbrushOld = static_cast<HBRUSH>(SelectObject(hDC, GetStockObject(NULL_BRUSH)));
+
+    // Calculate the dimensions of the 4 equal rectangles.
+    RECT rcWindow;
+    GetClientRect(hWnd, &rcWindow);
+
+    RECT rc1;
+    rc1 = rcWindow;
+
+    // Optionally, deflate each of the rectangles by an arbitrary amount so that
+    // they don't butt up right next to each other and we can distinguish them.
+    InflateRect(&rc1, -5, -5);
+    // Draw (differently-colored) borders around these rectangles.
+    SetDCPenColor(hDC, RGB(255, 0, 0));    // red
+    Rectangle(hDC, rc1.left, rc1.top, rc1.right, rc1.bottom);
+
+    // Draw the text into the center of each of the rectangles.
+    SetBkMode(hDC, TRANSPARENT);
+    SetBkColor(hDC, RGB(0, 0, 0));   // black
+    // TODO: Optionally, set a nicer font than the default.
+
+    // Clean up after ourselves.
+    SelectObject(hDC, hpenOld);
+    SelectObject(hDC, hbrushOld);
+    SetBkColor(hDC, RGB(0, 0, 0));
+    HBRUSH brush = CreateSolidBrush(RGB(50, 151, 151));
+
+    FillRect(hDC, &rc1, brush);
+
+    DeleteObject(brush);
+    SYSTEMTIME lt;
+    GetLocalTime(&lt);
+    char cstr2[100];
+#ifdef DEBUG
+    sprintf_s(cstr2, " %02d:%02d:%02d %s\n", lt.wHour > 12 ? lt.wHour - 12 : lt.wHour == 0 ? 12 : lt.wHour, lt.wMinute, lt.wMilliseconds, lt.wHour >= 12 ? "PM" : "AM");
+#else
+    sprintf_s(cstr2, " %02d:%02d %s\n", lt.wHour > 12 ? lt.wHour - 12 : lt.wHour == 0 ? 12 : lt.wHour, lt.wMinute, lt.wHour >= 12 ? "PM" : "AM");
+#endif
+    auto s = std::string(cstr2);
+    std::wstring stemp = std::wstring(s.begin(), s.end());
+    LPCWSTR sw = stemp.c_str();
+    SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    DrawText(hDC, sw, -1, &rc1, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+
+
+    EndPaint(hWnd, &ps);
 }
 
 //
@@ -154,57 +213,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
-    case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hDC = BeginPaint(hWnd, &ps);
-            // TODO: Add any drawing code that uses hdc here...
-            HPEN hpenOld = static_cast<HPEN>(SelectObject(hDC, GetStockObject(DC_PEN)));
-            HBRUSH hbrushOld = static_cast<HBRUSH>(SelectObject(hDC, GetStockObject(NULL_BRUSH)));
+    case WM_TIMER:
+    {
+        RECT rcWindow;
+        GetClientRect(hWnd, &rcWindow);
 
-            // Calculate the dimensions of the 4 equal rectangles.
-            RECT rcWindow;
-            GetClientRect(hWnd, &rcWindow);
+        RECT rc1;
+        rc1 = rcWindow;
 
-            RECT rc1;
-            rc1 = rcWindow;
-
-            // Optionally, deflate each of the rectangles by an arbitrary amount so that
-            // they don't butt up right next to each other and we can distinguish them.
-            InflateRect(&rc1, -5, -5);
-            // Draw (differently-colored) borders around these rectangles.
-            SetDCPenColor(hDC, RGB(255, 0, 0));    // red
-            Rectangle(hDC, rc1.left, rc1.top, rc1.right, rc1.bottom);
-
-            // Draw the text into the center of each of the rectangles.
-            SetBkMode(hDC, TRANSPARENT);
-            SetBkColor(hDC, RGB(0, 0, 0));   // black
-            // TODO: Optionally, set a nicer font than the default.
-
-            // Clean up after ourselves.
-            SelectObject(hDC, hpenOld);
-            SelectObject(hDC, hbrushOld);
-            SetBkColor(hDC, RGB(0, 0, 0));
-            HBRUSH brush = CreateSolidBrush(RGB(50, 151, 151));
-
-            FillRect(hDC, &rc1, brush);
-
-            DeleteObject(brush);
-            SYSTEMTIME lt;
-            GetLocalTime(&lt);
-            char cstr2[100];
-            sprintf_s(cstr2, " %02d:%02d %s\n", lt.wHour > 12 ? lt.wHour - 12 : lt.wHour == 0 ? 12 : lt.wHour, lt.wMinute, lt.wHour >= 12 ? "PM" : "AM");
-            auto s = std::string(cstr2);
-            std::wstring stemp = std::wstring(s.begin(), s.end());
-            LPCWSTR sw = stemp.c_str();
-            SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-            DrawText(hDC, sw, -1, &rc1, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
-
-
-            EndPaint(hWnd, &ps);
-        }
+        // Optionally, deflate each of the rectangles by an arbitrary amount so that
+        // they don't butt up right next to each other and we can distinguish them.
+        InflateRect(&rc1, -5, -5);
+        InvalidateRect(hWnd, &rc1, false);
         break;
-    case WM_NCHITTEST: {
+    }
+    case WM_PAINT:
+        DrawClock(hWnd);
+        break;
+    case WM_NCHITTEST:
+    {
         LRESULT hit = DefWindowProc(hWnd, message, wParam, lParam);
         if (hit == HTCLIENT) hit = HTCAPTION;
         return hit;

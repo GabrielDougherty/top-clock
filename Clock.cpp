@@ -193,7 +193,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             SYSTEMTIME lt;
             GetLocalTime(&lt);
             char cstr2[100];
-            sprintf_s(cstr2, " %02d:%02d %s\n", lt.wHour > 12 ? lt.wHour - 12 : lt.wHour, lt.wMinute, lt.wHour >= 12 ? "PM" : "AM");
+            sprintf_s(cstr2, " %02d:%02d %s\n", lt.wHour > 12 ? lt.wHour - 12 : lt.wHour == 0 ? 12 : lt.wHour, lt.wMinute, lt.wHour >= 12 ? "PM" : "AM");
             auto s = std::string(cstr2);
             std::wstring stemp = std::wstring(s.begin(), s.end());
             LPCWSTR sw = stemp.c_str();

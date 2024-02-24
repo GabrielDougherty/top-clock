@@ -24,6 +24,7 @@
     <ProjectGuid>{81dd3329-7218-48c3-a011-133f1024417e}</ProjectGuid>
     <RootNamespace>Clock</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>TopClock</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

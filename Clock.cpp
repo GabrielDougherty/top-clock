@@ -17,6 +17,7 @@ HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND hClockText;
+int cachedMinute{ -1 };
 
 const int WIN_WIDTH = 134;
 const int WIN_HEIGHT = 74;
@@ -117,7 +118,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    SetMenu(hWnd, NULL);
    SetTimer(hWnd,             // handle to main window 
        TIMER1,            // timer identifier 
-       100,                 // 1-second interval 
+       1000,                 // 1-second interval 
        (TIMERPROC)NULL);     // no timer callback 
 
    SetWindowLong(hWnd, GWL_STYLE, 0); //remove all window styles, check MSDN for details
@@ -163,11 +164,11 @@ void DrawClock(HWND hWnd)
 
     FillRect(hDC, &rc1, brush);
 
-    DeleteObject(brush);
     SYSTEMTIME lt;
     GetLocalTime(&lt);
+    DeleteObject(brush);
     char cstr2[100];
-#ifdef DEBUG
+#ifndef NDEBUG
     sprintf_s(cstr2, " %02d:%02d:%02d %s\n", lt.wHour > 12 ? lt.wHour - 12 : lt.wHour == 0 ? 12 : lt.wHour, lt.wMinute, lt.wMilliseconds, lt.wHour >= 12 ? "PM" : "AM");
 #else
     sprintf_s(cstr2, " %02d:%02d %s\n", lt.wHour > 12 ? lt.wHour - 12 : lt.wHour == 0 ? 12 : lt.wHour, lt.wMinute, lt.wHour >= 12 ? "PM" : "AM");
@@ -176,8 +177,16 @@ void DrawClock(HWND hWnd)
     std::wstring stemp = std::wstring(s.begin(), s.end());
     LPCWSTR sw = stemp.c_str();
     SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-    DrawText(hDC, sw, -1, &rc1, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
 
+#ifndef NDEBUG
+    auto tmp = std::string() + std::to_string(lt.wMinute) + " " + std::to_string(cachedMinute);
+
+    std::wstring temp2 = std::wstring(tmp.begin(), tmp.end());
+    OutputDebugString(temp2.c_str());
+#endif
+
+    DrawText(hDC, sw, -1, &rc1, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+    cachedMinute = lt.wMinute;
 
     EndPaint(hWnd, &ps);
 }
@@ -215,9 +224,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_TIMER:
     {
+        SYSTEMTIME lt;
+        GetLocalTime(&lt);
+
         RECT rcWindow;
         GetClientRect(hWnd, &rcWindow);
-
+        if (static_cast<int>(lt.wMinute) == cachedMinute)
+        {
+            break;
+        }
+        cachedMinute = lt.wMinute;
         RECT rc1;
         rc1 = rcWindow;
 

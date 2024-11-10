@@ -8,7 +8,9 @@ watching Youtube fullscreen or playing some supported games.
 
 ## Installation
 
-Install by using one of the installers in the Releases - EXE or MSI. Then it is
+Download and install the Microsoft Visual C++ Redistributable here: https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version
+
+Install Top Clock by using one of the installers in the [Releases](https://github.com/GabrielDougherty/top-clock/releases) - EXE or MSI. Then it is
 available from the Start Menu as TopClock.
 
 ## Usage
